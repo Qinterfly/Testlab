@@ -30,10 +30,14 @@
         // Info
         public readonly ResponseType Type;
         public string Path;
-        public string Name;
         public string OriginalRun;
+        public string Name;
         public string Node;
         public string Component;
         public string Direction;
+        public string Dimension;
+        public int Channel;
+        public int NumAverages;
+        public int Sign;
     }
 }

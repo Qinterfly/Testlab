@@ -21,11 +21,16 @@ Response& Response::operator=(const Response& another)
 
 	// Info
 	type = another.type;
-	name = another.name;
 	path = another.path;
 	originalRun = another.originalRun;
+	name = another.name;
 	node = another.node;
+	component = another.component;
 	direction = another.direction;
+	dimension = another.dimension;
+	channel = another.channel;
+	numAverages = another.numAverages;
+	sign = another.sign;
 
 	return *this;
 }
