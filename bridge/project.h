@@ -17,9 +17,10 @@ namespace Testlab
 		virtual ~Project();
 
 		bool isValid() const override;
-		std::wstring path() const override;
+		std::wstring getPath() override;
 
 		// Section
+		std::wstring getActiveSection() override;
 		void createSection(std::wstring const& section, bool isSelect) override;
 		bool isSectionExist(std::wstring const& section) override;
 

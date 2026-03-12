@@ -57,9 +57,16 @@ bool Project::isValid() const
 	return mpImpl->manager->isValid();
 }
 
-std::wstring Project::path() const
+std::wstring Project::getPath()
 {
-	std::wstring result = convert(mpImpl->manager->path());
+	std::wstring result = convert(mpImpl->manager->getPath());
+	return result;
+}
+
+std::wstring Project::getActiveSection()
+{
+	String^ cSection = mpImpl->manager->getActiveSection();
+	std::wstring result = convert(cSection);
 	return result;
 }
 
@@ -95,6 +102,7 @@ std::vector<IResponse*> Project::getResponses(std::vector<std::wstring> const& p
 	List<Core::Response^>^ responses = mpImpl->manager->getResponses(cPaths);
 	std::vector<IResponse*> result = convert(responses);
 	return result;
+
 }
 
 std::vector<IResponse*> Project::getSelectedResponses()
@@ -146,6 +154,7 @@ List<Core::Response^>^ convert(std::vector<IResponse*> responses)
 		item->ImagValues = convert(response->imagValues);
 
 		// Info
+		item->Path = convert(response->path);
 		item->OriginalRun = convert(response->originalRun);
 		item->Name = convert(response->name);
 		item->Node = convert(response->node);
@@ -155,6 +164,7 @@ List<Core::Response^>^ convert(std::vector<IResponse*> responses)
 		item->Channel = response->channel;
 		item->NumAverages = response->numAverages;
 		item->Sign = response->sign;
+		item->Transducer = convert(response->transducer);
 
 		result->Add(item);
 	}
@@ -196,6 +206,7 @@ IResponse* convert(Core::Response^ response)
 	result->channel = response->Channel;
 	result->numAverages = response->NumAverages;
 	result->sign = response->Sign;
+	result->transducer = convert(response->Transducer);
 
 	return result;
 }

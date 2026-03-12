@@ -31,6 +31,7 @@ Response& Response::operator=(const Response& another)
 	channel = another.channel;
 	numAverages = another.numAverages;
 	sign = another.sign;
+	transducer = another.transducer;
 
 	return *this;
 }

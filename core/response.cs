@@ -21,6 +21,11 @@
             return Path == another.Path;
         }
 
+        public bool isComplex()
+        {
+            return Keys.Length > 0 && RealValues.Length == ImagValues.Length;
+        }
+
         public int Length { get { return RealValues.Length; } }
 
         // Data
@@ -39,5 +44,6 @@
         public int Channel;
         public int NumAverages;
         public int Sign;
+        public string Transducer;
     }
 }

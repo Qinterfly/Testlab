@@ -74,19 +74,39 @@ namespace Core
         }
 
         // Retrieve path to a project
-        public string path()
+        public string getPath()
         {
             return mLastPath;
+        }
+
+        // Get a name of active section
+        public string getActiveSection()
+        {
+            try
+            {
+                return mApp.ActiveBook.ActiveSectionName;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         // Create a section
         public void createSection(string section, bool isSelect)
         {
             int numAttempts = Constants.kMaxAttemptAccess;
-            while (!isSectionExist(section) && --numAttempts > 0)
-                mApp.ActiveBook.NewSection(section);
-            if (isSelect)
-                mApp.ActiveBook.SwitchSection(section);
+            try
+            {
+                while (!isSectionExist(section) && --numAttempts > 0)
+                    mApp.ActiveBook.NewSection(section);
+                if (isSelect)
+                    mApp.ActiveBook.SwitchSection(section);
+            }
+            catch
+            {
+
+            }
         }
 
         // Check whether a section exists or not
@@ -94,11 +114,18 @@ namespace Core
         {
             if (mDatabase == null)
                 return false;
-            AttributeMap map = mDatabase.SectionNames;
-            foreach (string tSection in map)
+            try
             {
-                if (tSection.Equals(section))
-                    return true;
+                AttributeMap map = mDatabase.SectionNames;
+                foreach (string tSection in map)
+                {
+                    if (tSection.Equals(section))
+                        return true;
+                }
+            }
+            catch
+            {
+
             }
             return false;
         }
@@ -107,8 +134,15 @@ namespace Core
         public void createFolder(string section, string folder)
         {
             int numAttempts = Constants.kMaxAttemptAccess;
-            while (!isFolderExist(section, folder) && --numAttempts > 0)
-                mDatabase.AddFolder(section, folder);
+            try
+            {
+                while (!isFolderExist(section, folder) && --numAttempts > 0)
+                    mDatabase.AddFolder(section, folder);
+            }
+            catch
+            {
+
+            }
         }
 
         // Check whether a folder exists or not
@@ -134,7 +168,8 @@ namespace Core
                     IBlock2 signal = (IBlock2)mDatabase.GetItem(pathSignal);
                     if (signal != null)
                     {
-                        Response response = acquireResponse(pathSignal, signal, signal.Properties);
+                        string path = fixPath(pathSignal);
+                        Response response = acquireResponse(path, signal, signal.Properties);
                         if (response != null)
                             responses.Add(response);
                     }
@@ -175,12 +210,12 @@ namespace Core
                     IBlock2 signal = blockWatch.Data;
                     if (signal != null)
                     {
-                        Response response = acquireResponse(pathSignal, signal, signal.Properties);
+                        string path = fixPath(pathSignal);
+                        Response response = acquireResponse(path, signal, signal.Properties);
                         if (response != null)
                             responses.Add(response);
                     }
                 }
-
             }
             catch
             {
@@ -195,14 +230,22 @@ namespace Core
             int numResponses = responses.Count;
             try
             {
-                for (int i = 0; i != numResponses; ++i)
+                for (int iResponse = 0; iResponse != numResponses; ++iResponse)
                 {
-                    Response response = responses[i];
-                    if (response.RealValues.Length == response.ImagValues.Length)
-                    {
-                        IBlock2 block = createSpectrumBlock(response);
-                        mDatabase.AddItem(path, response.Name, block, null, Constants.kMaxAttemptAccess);
-                    }
+                    Response response = responses[iResponse];
+
+                    // Create data block
+                    IBlock2 block;
+                    if (response.isComplex())
+                        block = createComplexBlock(response);
+                    else
+                        block = createRealBlock(response);
+
+                    // Add it to the database
+                    string name = response.Name;
+                    if (name.Length == 0)
+                        continue;
+                    mDatabase.AddItem(path, name, block, null, Constants.kMaxAttemptAccess);
                 }
             }
             catch
@@ -264,6 +307,7 @@ namespace Core
             int sign = 1;
             if (props["Point direction sign"] == "-")
                 sign = -1;
+            string transducer = props["Transducer sn"];
 
             // Set the response
             Response response = new Response(type);
@@ -282,12 +326,13 @@ namespace Core
             response.Channel = channel;
             response.NumAverages = numAverages;
             response.Sign = sign;
+            response.Transducer = transducer;
 
             return response;
         }
 
-        // Create IBlock2 data
-        private IBlock2 createSpectrumBlock(in Response response)
+        // Create IBlock2 consisted of complex data
+        private IBlock2 createComplexBlock(in Response response)
         {
             // Create the block
             int numKeys = response.Keys.Length;
@@ -316,7 +361,6 @@ namespace Core
                 sign = "-";
             AttributeMap attributes = block.UserAttributes;
             attributes.Add("Channel id", response.Channel);
-            attributes.Add("Channel name", "C" + response.Channel);
             attributes.Add("Channelgroup", "Measure");
             attributes.Add("DOF id", $"{response.Component}:{response.Node}:{sign}{response.Direction}");
             attributes.Add("Function class", "Spectrum");
@@ -327,12 +371,64 @@ namespace Core
             attributes.Add("Point id", $"{response.Component}:{response.Node}");
             attributes.Add("Point id component", response.Component);
             attributes.Add("Point id node", response.Node);
+            attributes.Add("Transducer id", response.Dimension);
+            attributes.Add("Transducer sn", response.Transducer);
             block = block.ReplaceUserAttributes(attributes);
 
             return block;
         }
 
+        // Create IBlock2 data consisted of real data
+        private IBlock2 createRealBlock(in Response response)
+        {
+            // Create the block
+            int numKeys = response.Keys.Length;
+            AttributeMap map = mApp.CreateAttributeMap();
+            map.Add("BlockSize", numKeys);
+            IBlock2 block = (IBlock2)mApp.CreateObject("LmsHq::DataModelI::Expression::CBufferIBlock", map);
 
+            // Set the quantities
+            block = block.ReplaceXQuantity(mUnitSystem.QuantityTime);
+            block = block.ReplaceYQuantity(mUnitSystem.QuantityAcceleration);
+
+            // Set the data
+            block = block.ReplaceXDoubleValues(response.Keys);
+            block = block.ReplaceYDoubleValues(response.RealValues);
+
+            // Set the attributes
+            string sign = "+";
+            if (response.Sign < 0)
+                sign = "-";
+            AttributeMap attributes = block.UserAttributes;
+            attributes.Add("Channel id", response.Channel);
+            attributes.Add("Channelgroup", "Measure");
+            attributes.Add("DOF id", $"{response.Component}:{response.Node}:{sign}{response.Direction}");
+            attributes.Add("Point direction", sign + response.Direction);
+            attributes.Add("Point direction absolute", response.Direction);
+            attributes.Add("Point direction sign", sign);
+            attributes.Add("Point id", $"{response.Component}:{response.Node}");
+            attributes.Add("Point id component", response.Component);
+            attributes.Add("Point id node", response.Node);
+            attributes.Add("Transducer id", response.Dimension);
+            attributes.Add("Transducer sn", response.Transducer);
+            block = block.ReplaceUserAttributes(attributes);
+
+            return block;
+        }
+
+        // Remove special characters from the path
+        private string fixPath(in string path)
+        {
+            string result = path;
+            if (result.Contains("\\"))
+            {
+                result = result.Replace("/", "");
+                result = result.Replace("\\", "/");
+            }
+            if (!result.EndsWith("/"))
+                result += "/";
+            return result;
+        }
 
         private IApplication mApp;
         private IDatabase mDatabase;

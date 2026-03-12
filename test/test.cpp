@@ -24,9 +24,7 @@ TEST(ProjectCase, GetResponses)
 
 TEST(ProjectCase, AddResponses)
 {
-	std::wstring section = L"Section1";
-	std::wstring folder = L"Test";
-	std::wstring path = section + L"/" + folder;
-	spProject->createFolder(section, folder);
-	spProject->addResponses(sResponses, path);
+	std::wstring section = L"Test";
+	spProject->createSection(section, false);
+	spProject->addResponses(sResponses, section);
 }
