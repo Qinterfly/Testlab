@@ -45,5 +45,6 @@
         public int NumAverages;
         public int Sign;
         public string Transducer;
+        public string Comment;
     }
 }

@@ -165,6 +165,7 @@ List<Core::Response^>^ convert(std::vector<IResponse*> responses)
 		item->NumAverages = response->numAverages;
 		item->Sign = response->sign;
 		item->Transducer = convert(response->transducer);
+		item->Comment = convert(response->comment);
 
 		result->Add(item);
 	}
@@ -207,6 +208,7 @@ IResponse* convert(Core::Response^ response)
 	result->numAverages = response->NumAverages;
 	result->sign = response->Sign;
 	result->transducer = convert(response->Transducer);
+	result->comment = convert(response->Comment);
 
 	return result;
 }

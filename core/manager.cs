@@ -308,6 +308,7 @@ namespace Core
             if (props["Point direction sign"] == "-")
                 sign = -1;
             string transducer = props["Transducer sn"];
+            string comment = props["User comment"];
 
             // Set the response
             Response response = new Response(type);
@@ -327,6 +328,7 @@ namespace Core
             response.NumAverages = numAverages;
             response.Sign = sign;
             response.Transducer = transducer;
+            response.Comment = comment;
 
             return response;
         }
@@ -362,18 +364,18 @@ namespace Core
             AttributeMap attributes = block.UserAttributes;
             attributes.Add("Channel id", response.Channel);
             attributes.Add("Channelgroup", "Measure");
-            attributes.Add("DOF id", $"{response.Component}:{response.Node}:{sign}{response.Direction}");
             attributes.Add("Function class", "Spectrum");
             attributes.Add("Number of averages", response.NumAverages);
-            attributes.Add("Point direction", sign + response.Direction);
-            attributes.Add("Point direction absolute", response.Direction);
-            attributes.Add("Point direction sign", sign);
-            attributes.Add("Point id", $"{response.Component}:{response.Node}");
-            attributes.Add("Point id component", response.Component);
-            attributes.Add("Point id node", response.Node);
             attributes.Add("Transducer id", response.Dimension);
             attributes.Add("Transducer sn", response.Transducer);
+            attributes.Add("User comment", response.Comment);
             block = block.ReplaceUserAttributes(attributes);
+
+            // Set the header
+            IHeader header = block.Header;
+            header = header.Edit("Point id", $"{response.Component}:{response.Node}");
+            header = header.Edit("Point direction", createDirection(sign + response.Direction));
+            block = block.ReplaceHeader(header);
 
             return block;
         }
@@ -402,18 +404,33 @@ namespace Core
             AttributeMap attributes = block.UserAttributes;
             attributes.Add("Channel id", response.Channel);
             attributes.Add("Channelgroup", "Measure");
-            attributes.Add("DOF id", $"{response.Component}:{response.Node}:{sign}{response.Direction}");
-            attributes.Add("Point direction", sign + response.Direction);
-            attributes.Add("Point direction absolute", response.Direction);
-            attributes.Add("Point direction sign", sign);
-            attributes.Add("Point id", $"{response.Component}:{response.Node}");
-            attributes.Add("Point id component", response.Component);
-            attributes.Add("Point id node", response.Node);
             attributes.Add("Transducer id", response.Dimension);
             attributes.Add("Transducer sn", response.Transducer);
+            attributes.Add("User comment", response.Comment);
             block = block.ReplaceUserAttributes(attributes);
 
+            // Set the header
+            IHeader header = block.Header;
+            header = header.Edit("Point id", $"{response.Component}:{response.Node}");
+            header = header.Edit("Point direction", createDirection(sign + response.Direction));
+            block = block.ReplaceHeader(header);
+
             return block;
+        }
+
+        // Create IData consisted of point direction data
+        private IData createDirection(in string label)
+        {
+            var kMapLabels = new Dictionary<string, int>
+            {
+                { "+X", 1 }, { "-X", 2 },
+                { "+Y", 3 }, { "-Y", 4 },
+                { "+Z", 5 }, { "-Z", 6 },
+            };
+            AttributeMap map = mApp.CreateAttributeMap();
+            map.Add("EnumValue", kMapLabels.ContainsKey(label) ? kMapLabels[label] : 0);
+            IData direction = mApp.CreateObject("LmsHq::DataModelI::Channel::CBufferIEnumDirections", map);
+            return direction;
         }
 
         // Remove special characters from the path

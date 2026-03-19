@@ -32,6 +32,7 @@ Response& Response::operator=(const Response& another)
 	numAverages = another.numAverages;
 	sign = another.sign;
 	transducer = another.transducer;
+	comment = another.comment;
 
 	return *this;
 }
