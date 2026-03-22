@@ -5,9 +5,13 @@ namespace Core
 {
     static class Constants
     {
+        // Project
         public const int kMaxAttemptAccess = 5000;
         public const int kDepthSearch = 100;
         public const char kPathDelimiter = '/';
+
+        // Data
+        public const int kNumDirections = 3;
     }
 
     public class Manager
@@ -27,6 +31,7 @@ namespace Core
                     mApp.Init("-w DesktopStandard");
                 mDatabase = mApp.ActiveBook.Database();
                 mUnitSystem = mApp.UnitSystem;
+                mGeometry = (IGeometry)mDatabase.GetItem("Geometry");
             }
             catch
             {
@@ -42,6 +47,7 @@ namespace Core
             mApp = null;
             mDatabase = null;
             mUnitSystem = null;
+            mGeometry = null;
         }
 
         // Initialize the application and open a project
@@ -57,6 +63,7 @@ namespace Core
                     mApp.OpenProject(pathFile);
                 mDatabase = mApp.ActiveBook.Database();
                 mUnitSystem = mApp.UnitSystem;
+                mGeometry = (IGeometry)mDatabase.GetItem("Geometry");
                 mLastPath = pathFile;
             }
             catch
@@ -255,12 +262,19 @@ namespace Core
             return true;
         }
 
+        // Get the current geometry
+        public Geometry getGeometry()
+        {
+            return new Geometry(mGeometry);
+        }
+
         // Construct a response using block data
         private Response acquireResponse(in string path, in IBlock2 signal, in AttributeMap props)
         {
             ResponseType type = ResponseType.kUnknown;
             string measuredQuantity = props["Measured quantity"];
-            // Determination of the type of the signal
+
+            // Determine the response type
             // 15A version
             if (measuredQuantity != null)
             {
@@ -281,12 +295,14 @@ namespace Core
             }
             if (type == ResponseType.kUnknown)
                 return null;
+
+            // Get the keys and values
             double[] keys = (double[])signal.XValues;
-            double[,] data = (double[,])signal.YValues; // Units: m/s^2 or (m/s^2)/N 
+            double[,] data = (double[,])signal.YValues;
             if (keys.Length <= 1)
                 return null;
 
-            // Normalizing signals
+            // Split the value fields
             int length = data.GetLength(0);
             double[] realValues = new double[length];
             double[] imagValues = new double[length];
@@ -450,6 +466,7 @@ namespace Core
         private IApplication mApp;
         private IDatabase mDatabase;
         private IUnitSystem mUnitSystem;
+        private IGeometry mGeometry;
         private string mLastPath;
     }
 }

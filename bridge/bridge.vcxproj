@@ -139,13 +139,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="project.cpp" />
-    <ClCompile Include="response.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\common.h" />
     <ClInclude Include="macros.h" />
     <ClInclude Include="project.h" />
-    <ClInclude Include="response.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

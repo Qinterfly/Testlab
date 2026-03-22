@@ -3,7 +3,8 @@
 #include <string>
 #include <filesystem>
 
-#include "response.h"
+#include "common.h"
+#include "macros.h"
 
 namespace fs = std::filesystem;
 
@@ -32,6 +33,9 @@ namespace Testlab
 		std::vector<IResponse*> getResponses(std::vector<std::wstring> const& paths) override;
 		std::vector<IResponse*> getSelectedResponses() override;
 		bool addResponses(std::vector<IResponse*> const& responses, std::wstring const& path);
+
+		// Geometry
+		IGeometry* getGeometry() override;
 
 	private:
 		class Impl;

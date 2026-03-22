@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 namespace Testlab
 {
@@ -40,6 +41,38 @@ namespace Testlab
 		std::wstring comment;
 	};
 
+	class INode
+	{
+	public:
+		virtual ~INode() = default;
+
+		std::wstring name;
+		std::vector<double> coordinates;
+		std::vector<double> angles;
+	};
+
+	class IComponent
+	{
+	public:
+		virtual ~IComponent() = default;
+
+		std::wstring name;
+		std::vector<double> coordinates;
+		std::vector<double> angles;
+		std::vector<INode*> nodes;
+		std::vector<std::vector<int>> lines;
+		std::vector<std::vector<int>> trias;
+		std::vector<std::vector<int>> quads;
+	};
+
+	class IGeometry
+	{
+	public:
+		virtual ~IGeometry() = default;
+
+		std::vector<IComponent*> components;
+	};
+
 	class IProject
 	{
 	public:
@@ -61,6 +94,9 @@ namespace Testlab
 		virtual std::vector<IResponse*> getResponses(std::vector<std::wstring> const& paths) = 0;
 		virtual std::vector<IResponse*> getSelectedResponses() = 0;
 		virtual bool addResponses(std::vector<IResponse*> const& responses, std::wstring const& path) = 0;
+
+		// Geometry
+		virtual IGeometry* getGeometry() = 0;
 	};
 }
 

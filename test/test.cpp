@@ -28,3 +28,11 @@ TEST(ProjectCase, AddResponses)
 	spProject->createSection(section, false);
 	spProject->addResponses(sResponses, section);
 }
+
+TEST(ProjectCase, GetGeometry)
+{
+	IGeometry* pGeometry = spProject->getGeometry();
+	EXPECT_TRUE(pGeometry->components.size() == 1);
+	EXPECT_TRUE(pGeometry->components[0]->nodes.size() == 7);
+	EXPECT_TRUE(pGeometry->components[0]->lines.size() == 6);
+}
