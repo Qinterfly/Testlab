@@ -6,71 +6,79 @@
 
 namespace Testlab
 {
-	enum ResponseType
+	enum class Direction
 	{
-		kUnknown,
+		kNone,
+		kX,
+		kY,
+		kZ
+	};
+
+	enum class ResponseType
+	{
+		kNone,
 		kDisp,
 		kVeloc,
 		kAccel,
 		kForce
 	};
 
-	class IResponse
+	struct ResponsePoint
 	{
-	public:
-		virtual ~IResponse() = default;
+		std::wstring name;
+		std::wstring node;
+		std::wstring component;
+		Direction direction;
+		int sign;
+	};
 
+	struct ResponseHeader
+	{
+		ResponseType type;
+		std::wstring path;
+		std::wstring originalRun;
+		std::wstring name;
+		ResponsePoint point;
+		ResponsePoint refPoint;
+		int channel;
+		int numAverages;
+		std::wstring dimension;
+		std::wstring transducer;
+		std::wstring comment;
+	};
+
+	struct Response
+	{
 		// Data
 		std::vector<double> keys;
 		std::vector<double> realValues;
 		std::vector<double> imagValues;
 
-		// Info
-		ResponseType type;
-		std::wstring path;
-		std::wstring originalRun;
-		std::wstring name;
-		std::wstring node;
-		std::wstring component;
-		std::wstring direction;
-		std::wstring dimension;
-		int channel;
-		int numAverages;
-		int sign;
-		std::wstring transducer;
-		std::wstring comment;
+		// Header
+		ResponseHeader header;
 	};
 
-	class INode
+	struct Node
 	{
-	public:
-		virtual ~INode() = default;
-
 		std::wstring name;
 		std::vector<double> coordinates;
 		std::vector<double> angles;
 	};
 
-	class IComponent
+	struct Component
 	{
-	public:
-		virtual ~IComponent() = default;
-
 		std::wstring name;
 		std::vector<double> coordinates;
 		std::vector<double> angles;
-		std::vector<INode*> nodes;
+		std::vector<Node> nodes;
 		std::vector<std::vector<int>> lines;
 		std::vector<std::vector<int>> trias;
 		std::vector<std::vector<int>> quads;
 	};
 
-	class IGeometry
+	struct Geometry
 	{
-	public:
-		virtual ~IGeometry() = default;
-
-		std::vector<IComponent*> components;
+		std::vector<Component> components;
 	};
 
 	class IProject
@@ -91,12 +99,12 @@ namespace Testlab
 		virtual bool isFolderExist(std::wstring const& section, std::wstring const& folder) = 0;
 
 		// Responses
-		virtual std::vector<IResponse*> getResponses(std::vector<std::wstring> const& paths) = 0;
-		virtual std::vector<IResponse*> getSelectedResponses() = 0;
-		virtual bool addResponses(std::vector<IResponse*> const& responses, std::wstring const& path) = 0;
+		virtual std::vector<Response> getResponses(std::vector<std::wstring> const& paths) = 0;
+		virtual std::vector<Response> getSelectedResponses() = 0;
+		virtual bool addResponses(std::vector<Response> const& responses, std::wstring const& path) = 0;
 
 		// Geometry
-		virtual IGeometry* getGeometry() = 0;
+		virtual Geometry getGeometry() = 0;
 	};
 }
 

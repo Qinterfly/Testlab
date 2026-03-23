@@ -249,7 +249,7 @@ namespace Core
                         block = createRealBlock(response);
 
                     // Add it to the database
-                    string name = response.Name;
+                    string name = response.Header.Name;
                     if (name.Length == 0)
                         continue;
                     mDatabase.AddItem(path, name, block, null, Constants.kMaxAttemptAccess);
@@ -271,7 +271,7 @@ namespace Core
         // Construct a response using block data
         private Response acquireResponse(in string path, in IBlock2 signal, in AttributeMap props)
         {
-            ResponseType type = ResponseType.kUnknown;
+            ResponseType type = ResponseType.kNone;
             string measuredQuantity = props["Measured quantity"];
 
             // Determine the response type
@@ -293,7 +293,7 @@ namespace Core
                 if (unitY.Equals("N"))
                     type = ResponseType.kForce;
             }
-            if (type == ResponseType.kUnknown)
+            if (type == ResponseType.kNone)
                 return null;
 
             // Get the keys and values
@@ -312,39 +312,37 @@ namespace Core
                 imagValues[k] = data[k, 1];
             }
 
-            // Retrieve the info
-            int channel = props["Channel id"];
-            string originalRun = props["Original run"].AttributeMap["Contents"];
-            string node = props["Point id node"];
-            string component = props["Point id component"];
-            string direction = props["Point direction absolute"];
-            string dimension = props["Transducer id"];
-            int numAverages = props["Number of averages"];
-            int sign = 1;
-            if (props["Point direction sign"] == "-")
-                sign = -1;
-            string transducer = props["Transducer sn"];
-            string comment = props["User comment"];
-
             // Set the response
-            Response response = new Response(type);
+            Response response = new Response();
             // Data
             response.Keys = keys;
             response.RealValues = realValues;
             response.ImagValues = imagValues;
-            // Props
-            response.Path = path;
-            response.OriginalRun = originalRun;
-            response.Name = signal.Label;
-            response.Node = node;
-            response.Component = component;
-            response.Direction = direction;
-            response.Dimension = dimension;
-            response.Channel = channel;
-            response.NumAverages = numAverages;
-            response.Sign = sign;
-            response.Transducer = transducer;
-            response.Comment = comment;
+            // General
+            ResponseHeader header = response.Header;
+            header.Type = type;
+            header.Path = path;
+            header.OriginalRun = props["Original run"].AttributeMap["Contents"];
+            header.Name = signal.Label;
+            header.Channel = props["Channel id"];
+            header.NumAverages = props["Number of averages"];
+            header.Dimension = props["Transducer id"];
+            header.Transducer = props["Transducer sn"];
+            header.Comment = props["User comment"];
+            // Point
+            ResponsePoint point = header.Point;
+            point.Name = props["Point id"];
+            point.Node = props["Point id node"];
+            point.Component = props["Point id component"];
+            point.Direction = getDirectionValue(props["Point direction absolute"]);
+            point.Sign = getSignValue(props["Point direction sign"]);
+            // Reference point
+            ResponsePoint refPoint = header.RefPoint;
+            refPoint.Name = props["Reference point id"];
+            refPoint.Node = props["Reference point id node"];
+            refPoint.Component = props["Reference point id component"];
+            refPoint.Direction = getDirectionValue(props["Reference point direction absolute"]);
+            refPoint.Sign = getSignValue(props["Reference point direction sign"]);
 
             return response;
         }
@@ -373,25 +371,8 @@ namespace Core
             block = block.ReplaceXDoubleValues(response.Keys);
             block = block.ReplaceYComplexValues(values);
 
-            // Set the attributes
-            string sign = "+";
-            if (response.Sign < 0)
-                sign = "-";
-            AttributeMap attributes = block.UserAttributes;
-            attributes.Add("Channel id", response.Channel);
-            attributes.Add("Channelgroup", "Measure");
-            attributes.Add("Function class", "Spectrum");
-            attributes.Add("Number of averages", response.NumAverages);
-            attributes.Add("Transducer id", response.Dimension);
-            attributes.Add("Transducer sn", response.Transducer);
-            attributes.Add("User comment", response.Comment);
-            block = block.ReplaceUserAttributes(attributes);
-
             // Set the header
-            IHeader header = block.Header;
-            header = header.Edit("Point id", $"{response.Component}:{response.Node}");
-            header = header.Edit("Point direction", createDirection(sign + response.Direction));
-            block = block.ReplaceHeader(header);
+            setBlockHeader(ref block, response.Header);
 
             return block;
         }
@@ -413,25 +394,40 @@ namespace Core
             block = block.ReplaceXDoubleValues(response.Keys);
             block = block.ReplaceYDoubleValues(response.RealValues);
 
-            // Set the attributes
-            string sign = "+";
-            if (response.Sign < 0)
-                sign = "-";
-            AttributeMap attributes = block.UserAttributes;
-            attributes.Add("Channel id", response.Channel);
-            attributes.Add("Channelgroup", "Measure");
-            attributes.Add("Transducer id", response.Dimension);
-            attributes.Add("Transducer sn", response.Transducer);
-            attributes.Add("User comment", response.Comment);
-            block = block.ReplaceUserAttributes(attributes);
-
             // Set the header
-            IHeader header = block.Header;
-            header = header.Edit("Point id", $"{response.Component}:{response.Node}");
-            header = header.Edit("Point direction", createDirection(sign + response.Direction));
-            block = block.ReplaceHeader(header);
+            setBlockHeader(ref block, response.Header);
 
             return block;
+        }
+
+        // Set the block attributes and header
+        private void setBlockHeader(ref IBlock2 block, in ResponseHeader rHeader)
+        {
+            // Set the attributes
+            AttributeMap attributes = block.UserAttributes;
+            attributes.Add("Channel id", rHeader.Channel);
+            attributes.Add("Channelgroup", "Measure");
+            attributes.Add("Transducer id", rHeader.Dimension);
+            attributes.Add("Transducer sn", rHeader.Transducer);
+            attributes.Add("User comment", rHeader.Comment);
+            block = block.ReplaceUserAttributes(attributes);
+
+            // Set the block header
+            IHeader bHeader = block.Header;
+            string pointSign = getSignLabel(rHeader.Point.Sign);
+            string pointName = $"{rHeader.Point.Component}:{rHeader.Point.Node}";
+            string pointDirection = pointSign + getDirectionLabel(rHeader.Point.Direction);
+            bHeader = bHeader.Edit("Point id", pointName);
+            bHeader = bHeader.Edit("Point direction", createDirection(pointDirection));
+            if (rHeader.RefPoint.Node != string.Empty)
+            {
+                string refPointSign = getSignLabel(rHeader.RefPoint.Sign);
+                string refPointName = $"{rHeader.RefPoint.Component}:{rHeader.RefPoint.Node}";
+                string refPointDirection = refPointSign + getDirectionLabel(rHeader.RefPoint.Direction);
+                bHeader = bHeader.Edit("Reference point id", refPointName);
+                bHeader = bHeader.Edit("Reference point direction", createDirection(refPointDirection));
+            }
+            block = block.ReplaceHeader(bHeader);
         }
 
         // Create IData consisted of point direction data
@@ -461,6 +457,48 @@ namespace Core
             if (!result.EndsWith("/"))
                 result += "/";
             return result;
+        }
+
+        // Retrieve direction value
+        private Direction getDirectionValue(string label)
+        {
+            switch (label)
+            {
+                case "X":
+                    return Direction.kX;
+                case "Y":
+                    return Direction.kY;
+                case "Z":
+                    return Direction.kZ;
+            }
+            return Direction.kNone;
+        }
+
+        // Retrieve direction label
+        private string getDirectionLabel(Direction value)
+        {
+            switch (value)
+            {
+                case Direction.kX:
+                    return "X";
+                case Direction.kY:
+                    return "Y";
+                case Direction.kZ:
+                    return "Z";
+            }
+            return string.Empty;
+        }
+
+        // Retrieve sign value
+        private int getSignValue(string label)
+        {
+            return label == "-" ? -1 : +1;
+        }
+
+        // Retrieve sign label
+        private string getSignLabel(int value)
+        {
+            return value < 0 ? "-" : "+";
         }
 
         private IApplication mApp;

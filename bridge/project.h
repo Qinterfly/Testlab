@@ -30,12 +30,12 @@ namespace Testlab
 		bool isFolderExist(std::wstring const& section, std::wstring const& folder) override;
 
 		// Responses
-		std::vector<IResponse*> getResponses(std::vector<std::wstring> const& paths) override;
-		std::vector<IResponse*> getSelectedResponses() override;
-		bool addResponses(std::vector<IResponse*> const& responses, std::wstring const& path);
+		std::vector<Response> getResponses(std::vector<std::wstring> const& paths) override;
+		std::vector<Response> getSelectedResponses() override;
+		bool addResponses(std::vector<Response> const& responses, std::wstring const& path);
 
 		// Geometry
-		IGeometry* getGeometry() override;
+		Geometry getGeometry() override;
 
 	private:
 		class Impl;

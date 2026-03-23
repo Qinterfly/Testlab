@@ -4,7 +4,7 @@
 using namespace Testlab;
 
 static IProject* spProject;
-static std::vector<IResponse*> sResponses;
+static std::vector<Response> sResponses;
 
 TEST(ProjectCase, Open)
 {
@@ -31,8 +31,8 @@ TEST(ProjectCase, AddResponses)
 
 TEST(ProjectCase, GetGeometry)
 {
-	IGeometry* pGeometry = spProject->getGeometry();
-	EXPECT_TRUE(pGeometry->components.size() == 1);
-	EXPECT_TRUE(pGeometry->components[0]->nodes.size() == 7);
-	EXPECT_TRUE(pGeometry->components[0]->lines.size() == 6);
+	Geometry geometry = spProject->getGeometry();
+	EXPECT_TRUE(geometry.components.size() == 1);
+	EXPECT_TRUE(geometry.components[0].nodes.size() == 7);
+	EXPECT_TRUE(geometry.components[0].lines.size() == 6);
 }

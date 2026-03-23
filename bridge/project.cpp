@@ -15,7 +15,11 @@ using namespace Testlab;
 String^ convert(std::wstring const& string);
 List<String^>^ convert(std::vector<std::wstring> const& strings);
 array<double>^ convert(std::vector<double> const& data);
-List<Core::Response^>^ convert(std::vector<IResponse*> responses);
+
+Core::Response^ convert(Response const& response);
+Core::ResponsePoint^ convert(ResponsePoint const& point);
+
+List<Core::Response^>^ convert(std::vector<Response> const& responses);
 
 // From managed
 std::wstring convert(String^ string);
@@ -23,14 +27,15 @@ std::vector<int> convert(array<int>^ array);
 std::vector<double> convert(array<double>^ array);
 std::vector<std::vector<int>> convert(array<int, 2>^ array);
 
-IResponse* convert(Core::Response^ response);
-IGeometry* convert(Core::Geometry^ geometry);
-IComponent* convert(Core::Component^ component);
-INode* convert(Core::Node^ component);
+Response convert(Core::Response^ response);
+ResponsePoint convert(Core::ResponsePoint^ point);
+Geometry convert(Core::Geometry^ geometry);
+Component convert(Core::Component^ component);
+Node convert(Core::Node^ component);
 
-std::vector<IResponse*> convert(List<Core::Response^>^ responses);
-std::vector<IComponent*> convert(List<Core::Component^>^ components);
-std::vector<INode*> convert(List<Core::Node^>^ nodes);
+std::vector<Response> convert(List<Core::Response^>^ responses);
+std::vector<Component> convert(List<Core::Component^>^ components);
+std::vector<Node> convert(List<Core::Node^>^ nodes);
 
 class Project::Impl
 {
@@ -105,33 +110,33 @@ bool Project::isFolderExist(std::wstring const& section, std::wstring const& fol
 	return mpImpl->manager->isFolderExist(cSection, cFolder);
 }
 
-std::vector<IResponse*> Project::getResponses(std::vector<std::wstring> const& paths)
+std::vector<Response> Project::getResponses(std::vector<std::wstring> const& paths)
 {
 	List<String^>^ cPaths = convert(paths);
 	List<Core::Response^>^ responses = mpImpl->manager->getResponses(cPaths);
-	std::vector<IResponse*> result = convert(responses);
+	std::vector<Response> result = convert(responses);
 	return result;
 
 }
 
-std::vector<IResponse*> Project::getSelectedResponses()
+std::vector<Response> Project::getSelectedResponses()
 {
 	List<Core::Response^>^ responses = mpImpl->manager->getSelectedResponses();
-	std::vector<IResponse*> result = convert(responses);
+	std::vector<Response> result = convert(responses);
 	return result;
 }
 
-bool Project::addResponses(std::vector<IResponse*> const& responses, std::wstring const& path)
+bool Project::addResponses(std::vector<Response> const& responses, std::wstring const& path)
 {
 	List<Core::Response^>^ cResponses = convert(responses);
 	String^ cPath = convert(path);
 	return mpImpl->manager->addResponses(cResponses, cPath);
 }
 
-IGeometry* Project::getGeometry()
+Geometry Project::getGeometry()
 {
 	Core::Geometry^ geometry = mpImpl->manager->getGeometry();
-	IGeometry* result = convert(geometry);
+	Geometry result = convert(geometry);
 	return result;
 }
 
@@ -157,40 +162,57 @@ array<double>^ convert(std::vector<double> const& data)
 	return result;
 }
 
-List<Core::Response^>^ convert(std::vector<IResponse*> responses)
+Core::Response^ convert(Response const& response)
+{
+	Core::Response^ result = gcnew Core::Response();
+
+	// Data
+	result->Keys = convert(response.keys);
+	result->RealValues = convert(response.realValues);
+	result->ImagValues = convert(response.imagValues);
+
+	// Header
+	Core::ResponseHeader^ cHeader = result->Header;
+	ResponseHeader const& rHeader = response.header;
+	cHeader->Type = (Core::ResponseType)rHeader.type;
+	cHeader->Path = convert(rHeader.path);
+	cHeader->OriginalRun = convert(rHeader.originalRun);
+	cHeader->Name = convert(rHeader.name);
+	cHeader->Point = convert(rHeader.point);
+	cHeader->RefPoint = convert(rHeader.refPoint);
+	cHeader->Channel = rHeader.channel;
+	cHeader->NumAverages = rHeader.numAverages;
+	cHeader->Dimension = convert(rHeader.dimension);
+	cHeader->Transducer = convert(rHeader.transducer);
+	cHeader->Comment = convert(rHeader.comment);
+
+	return result;
+}
+
+Core::ResponsePoint^ convert(ResponsePoint const& point)
+{
+	Core::ResponsePoint^ result = gcnew Core::ResponsePoint();
+	result->Name = convert(point.name);
+	result->Node = convert(point.node);
+	result->Component = convert(point.component);
+	result->Direction = (Core::Direction)point.direction;
+	result->Sign = point.sign;
+	return result;
+}
+
+List<Core::Response^>^ convert(std::vector<Response> const& responses)
 {
 	List<Core::Response^>^ result = gcnew List<Core::Response^>(responses.size());
 	for (const auto& response : responses)
-	{
-		Core::Response^ item = gcnew Core::Response((Core::ResponseType)response->type);
-
-		// Data
-		item->Keys = convert(response->keys);
-		item->RealValues = convert(response->realValues);
-		item->ImagValues = convert(response->imagValues);
-
-		// Info
-		item->Path = convert(response->path);
-		item->OriginalRun = convert(response->originalRun);
-		item->Name = convert(response->name);
-		item->Node = convert(response->node);
-		item->Component = convert(response->component);
-		item->Direction = convert(response->direction);
-		item->Dimension = convert(response->dimension);
-		item->Channel = response->channel;
-		item->NumAverages = response->numAverages;
-		item->Sign = response->sign;
-		item->Transducer = convert(response->transducer);
-		item->Comment = convert(response->comment);
-
-		result->Add(item);
-	}
+		result->Add(convert(response));
 	return result;
 }
 
 std::wstring convert(String^ string)
 {
-	return marshal_as<std::wstring>(string);
+	if (string)
+		return marshal_as<std::wstring>(string);
+	return std::wstring();
 }
 
 std::vector<int> convert(array<int>^ array)
@@ -226,66 +248,77 @@ std::vector<std::vector<int>> convert(array<int, 2>^ array)
 	return result;
 }
 
-IResponse* convert(Core::Response^ response)
+Response convert(Core::Response^ response)
 {
-	IResponse* result = new IResponse;
+	Response result;
 
 	// Data
-	result->keys = convert(response->Keys);
-	result->realValues = convert(response->RealValues);
-	result->imagValues = convert(response->ImagValues);
+	result.keys = convert(response->Keys);
+	result.realValues = convert(response->RealValues);
+	result.imagValues = convert(response->ImagValues);
 
-	// Info
-	result->type = (ResponseType)response->Type;
-	result->path = convert(response->Path);
-	result->originalRun = convert(response->OriginalRun);
-	result->name = convert(response->Name);
-	result->node = convert(response->Node);
-	result->component = convert(response->Component);
-	result->direction = convert(response->Direction);
-	result->dimension = convert(response->Dimension);
-	result->channel = response->Channel;
-	result->numAverages = response->NumAverages;
-	result->sign = response->Sign;
-	result->transducer = convert(response->Transducer);
-	result->comment = convert(response->Comment);
+	// Header
+	Core::ResponseHeader^ cHeader = response->Header;
+	ResponseHeader& rHeader = result.header;
+	rHeader.type = (ResponseType)cHeader->Type;
+	rHeader.path = convert(cHeader->Path);
+	rHeader.originalRun = convert(cHeader->OriginalRun);
+	rHeader.name = convert(cHeader->Name);
+	rHeader.point = convert(cHeader->Point);
+	rHeader.refPoint = convert(cHeader->RefPoint);
+	rHeader.channel = cHeader->Channel;
+	rHeader.numAverages = cHeader->NumAverages;
+	rHeader.dimension = convert(cHeader->Dimension);
+	rHeader.transducer = convert(cHeader->Transducer);
+	rHeader.comment = convert(cHeader->Comment);
 
 	return result;
 }
 
-IGeometry* convert(Core::Geometry^ geometry)
+ResponsePoint convert(Core::ResponsePoint^ point)
 {
-	IGeometry* result = new IGeometry;
-	result->components = convert(geometry->Components);
+	ResponsePoint result;
+	result.name = convert(point->Name);
+	result.node = convert(point->Node);
+	result.component = convert(point->Component);
+	result.direction = (Direction)point->Direction;
+	result.sign = point->Sign;
 	return result;
 }
 
-IComponent* convert(Core::Component^ component)
+Geometry convert(Core::Geometry^ geometry)
 {
-	IComponent* result = new IComponent;
-	result->name = convert(component->Name);
-	result->coordinates = convert(component->Coordinates);
-	result->angles = convert(component->Angles);
-	result->nodes = convert(component->Nodes);
-	result->lines = convert(component->Lines);
-	result->trias = convert(component->Trias);
-	result->quads = convert(component->Quads);
+	Geometry result;
+	result.components = convert(geometry->Components);
 	return result;
 }
 
-INode* convert(Core::Node^ node)
+Component convert(Core::Component^ component)
 {
-	INode* result = new INode;
-	result->name = convert(node->Name);
-	result->coordinates = convert(node->Coordinates);
-	result->angles = convert(node->Angles);
+	Component result;
+	result.name = convert(component->Name);
+	result.coordinates = convert(component->Coordinates);
+	result.angles = convert(component->Angles);
+	result.nodes = convert(component->Nodes);
+	result.lines = convert(component->Lines);
+	result.trias = convert(component->Trias);
+	result.quads = convert(component->Quads);
 	return result;
 }
 
-std::vector<IResponse*> convert(List<Core::Response^>^ responses)
+Node convert(Core::Node^ node)
+{
+	Node result;
+	result.name = convert(node->Name);
+	result.coordinates = convert(node->Coordinates);
+	result.angles = convert(node->Angles);
+	return result;
+}
+
+std::vector<Response> convert(List<Core::Response^>^ responses)
 {
 	int numResponses = responses->Count;
-	std::vector<IResponse*> result(numResponses);
+	std::vector<Response> result(numResponses);
 	for (int i = 0; i != numResponses; ++i)
 	{
 		Core::Response^ response = responses->ToArray()[i];
@@ -294,10 +327,10 @@ std::vector<IResponse*> convert(List<Core::Response^>^ responses)
 	return result;
 }
 
-std::vector<IComponent*> convert(List<Core::Component^>^ components)
+std::vector<Component> convert(List<Core::Component^>^ components)
 {
 	int numComponents = components->Count;
-	std::vector<IComponent*> result(numComponents);
+	std::vector<Component> result(numComponents);
 	for (int i = 0; i != numComponents; ++i)
 	{
 		Core::Component^ component = components->ToArray()[i];
@@ -306,10 +339,10 @@ std::vector<IComponent*> convert(List<Core::Component^>^ components)
 	return result;
 }
 
-std::vector<INode*> convert(List<Core::Node^>^ nodes)
+std::vector<Node> convert(List<Core::Node^>^ nodes)
 {
 	int numNodes = nodes->Count;
-	std::vector<INode*> result(numNodes);
+	std::vector<Node> result(numNodes);
 	for (int i = 0; i != numNodes; ++i)
 	{
 		Core::Node^ node = nodes->ToArray()[i];
