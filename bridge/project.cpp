@@ -18,6 +18,7 @@ array<double>^ convert(std::vector<double> const& data);
 
 Core::Response^ convert(Response const& response);
 Core::ResponsePoint^ convert(ResponsePoint const& point);
+Core::ResponseUnit^ convert(ResponseUnit const& unit);
 
 List<Core::Response^>^ convert(std::vector<Response> const& responses);
 
@@ -29,6 +30,7 @@ std::vector<std::vector<int>> convert(array<int, 2>^ array);
 
 Response convert(Core::Response^ response);
 ResponsePoint convert(Core::ResponsePoint^ point);
+ResponseUnit convert(Core::ResponseUnit^ unit);
 Geometry convert(Core::Geometry^ geometry);
 Component convert(Core::Component^ component);
 Node convert(Core::Node^ component);
@@ -180,6 +182,7 @@ Core::Response^ convert(Response const& response)
 	cHeader->Name = convert(rHeader.name);
 	cHeader->Point = convert(rHeader.point);
 	cHeader->RefPoint = convert(rHeader.refPoint);
+	cHeader->Unit = convert(rHeader.unit);
 	cHeader->Channel = rHeader.channel;
 	cHeader->NumAverages = rHeader.numAverages;
 	cHeader->Dimension = convert(rHeader.dimension);
@@ -198,6 +201,17 @@ Core::ResponsePoint^ convert(ResponsePoint const& point)
 	result->Direction = (Core::Direction)point.direction;
 	result->Sign = point.sign;
 	return result;
+}
+
+Core::ResponseUnit^ convert(ResponseUnit const& unit)
+{
+	Core::ResponseUnit^ result = gcnew Core::ResponseUnit();
+	result->Length = unit.length;
+	result->Mass = unit.mass;
+	result->Time = unit.time;
+	result->Scale = unit.scale;
+	result->Name = convert(unit.name);
+	return  result;
 }
 
 List<Core::Response^>^ convert(std::vector<Response> const& responses)
@@ -266,6 +280,7 @@ Response convert(Core::Response^ response)
 	rHeader.name = convert(cHeader->Name);
 	rHeader.point = convert(cHeader->Point);
 	rHeader.refPoint = convert(cHeader->RefPoint);
+	rHeader.unit = convert(cHeader->Unit);
 	rHeader.channel = cHeader->Channel;
 	rHeader.numAverages = cHeader->NumAverages;
 	rHeader.dimension = convert(cHeader->Dimension);
@@ -283,6 +298,17 @@ ResponsePoint convert(Core::ResponsePoint^ point)
 	result.component = convert(point->Component);
 	result.direction = (Direction)point->Direction;
 	result.sign = point->Sign;
+	return result;
+}
+
+ResponseUnit convert(Core::ResponseUnit^ unit)
+{
+	ResponseUnit result;
+	result.length = unit->Length;
+	result.mass = unit->Mass;
+	result.time = unit->Time;
+	result.scale = unit->Scale;
+	result.name = convert(unit->Name);
 	return result;
 }
 

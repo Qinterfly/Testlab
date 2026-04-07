@@ -271,6 +271,8 @@ namespace Core
         // Construct a response using block data
         private Response acquireResponse(in string path, in IBlock2 signal, in AttributeMap props)
         {
+            const int kFRFType = 12;
+
             ResponseType type = ResponseType.kNone;
             string measuredQuantity = props["Measured quantity"];
 
@@ -295,6 +297,10 @@ namespace Core
             }
             if (type == ResponseType.kNone)
                 return null;
+
+            // Checking the reference point in case of FRF                        
+            int iFunctionClass = props["Function class"].AttributeMap["EnumValue"];
+            bool isFRF = iFunctionClass == kFRFType;
 
             // Get the keys and values
             double[] keys = (double[])signal.XValues;
@@ -343,6 +349,11 @@ namespace Core
             refPoint.Component = props["Reference point id component"];
             refPoint.Direction = getDirectionValue(props["Reference point direction absolute"]);
             refPoint.Sign = getSignValue(props["Reference point direction sign"]);
+            // Unit
+            if (type == ResponseType.kAccel)
+                header.Unit = isFRF ? new ResponseUnit(0, -1, 0, 1.0, "(m/s^2)/N") : new ResponseUnit(1, 0, -2, 1.0, "m/s^2");
+            else
+                header.Unit = new ResponseUnit(1, 1, -2, 1.0, "N");
 
             return response;
         }
