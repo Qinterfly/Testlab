@@ -334,6 +334,7 @@ namespace Core
             header.NumAverages = props["Number of averages"];
             header.Dimension = props["Transducer id"];
             header.Transducer = props["Transducer sn"];
+            header.FunctionClass = isFRF ? "FRF" : "Spectrum";
             header.Comment = props["User comment"];
             // Point
             ResponsePoint point = header.Point;
@@ -353,7 +354,7 @@ namespace Core
             if (type == ResponseType.kAccel)
                 header.Unit = isFRF ? new ResponseUnit(0, -1, 0, 1.0, "(m/s^2)/N") : new ResponseUnit(1, 0, -2, 1.0, "m/s^2");
             else
-                header.Unit = new ResponseUnit(1, 1, -2, 1.0, "N");
+                header.Unit = isFRF ? new ResponseUnit(0, 0, 0, 1.0, "/") : new ResponseUnit(1, 1, -2, 1.0, "N");
 
             return response;
         }

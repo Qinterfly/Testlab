@@ -71,6 +71,7 @@
         public int NumAverages;
         public string Dimension;
         public string Transducer;
+        public string FunctionClass;
         public string Comment;
     }
 

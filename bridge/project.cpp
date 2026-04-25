@@ -187,6 +187,7 @@ Core::Response^ convert(Response const& response)
 	cHeader->NumAverages = rHeader.numAverages;
 	cHeader->Dimension = convert(rHeader.dimension);
 	cHeader->Transducer = convert(rHeader.transducer);
+	cHeader->FunctionClass = convert(rHeader.functionClass);
 	cHeader->Comment = convert(rHeader.comment);
 
 	return result;
@@ -285,6 +286,7 @@ Response convert(Core::Response^ response)
 	rHeader.numAverages = cHeader->NumAverages;
 	rHeader.dimension = convert(cHeader->Dimension);
 	rHeader.transducer = convert(cHeader->Transducer);
+	rHeader.functionClass = convert(cHeader->FunctionClass);
 	rHeader.comment = convert(cHeader->Comment);
 
 	return result;
