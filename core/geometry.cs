@@ -19,6 +19,7 @@ namespace Core
             // Initialize the temporary variables
             Array X, Y, Z, rotXY, rotXZ, rotYZ;
             Array nodeNamesA, nodeNamesB, nodeNamesC, nodeNamesD;
+            Array slaveNodeNames, masterNodeNames1, masterNodeNames2, masterNodeNames3, masterNodeNames4;
 
             // Loop through all the components
             Array componentNames = geometry.ComponentNames;
@@ -57,7 +58,7 @@ namespace Core
                 geometry.ComponentLines(componentName, out nodeNamesA, out nodeNamesB);
                 int numLines = nodeNamesA.Length;
                 int[,] lines = new int[numLines, 2];
-                for (int iLine = 0; iLine < numLines; ++iLine)
+                for (int iLine = 0; iLine != numLines; ++iLine)
                 {
                     lines[iLine, 0] = mapNodes[(string)nodeNamesA.GetValue(iLine)];
                     lines[iLine, 1] = mapNodes[(string)nodeNamesB.GetValue(iLine)];
@@ -102,9 +103,37 @@ namespace Core
                 component.Trias = trias;
                 component.Quads = quads;
             }
+
+            // Slaves
+            geometry.Slaves(out slaveNodeNames, out masterNodeNames1, out masterNodeNames2, out masterNodeNames3, out masterNodeNames4, out X, out Y, out Z);
+            int numSlaves = masterNodeNames1.Length;
+            Dependencies = new List<Dependency>(numSlaves);
+            for (int iSlave = 0; iSlave != numSlaves; ++iSlave)
+            {
+                Dependency dependency = new Dependency();
+
+                // Dependent node
+                dependency.Slave = (string)slaveNodeNames.GetValue(iSlave);
+
+                // Master nodes
+                dependency.Masters = new string[4];
+                dependency.Masters[0] = (string)masterNodeNames1.GetValue(iSlave);
+                dependency.Masters[1] = (string)masterNodeNames2.GetValue(iSlave);
+                dependency.Masters[2] = (string)masterNodeNames3.GetValue(iSlave);
+                dependency.Masters[3] = (string)masterNodeNames4.GetValue(iSlave);
+
+                // Directional flags
+                dependency.Flags = new int[3];
+                dependency.Flags[0] = (int)X.GetValue(iSlave);
+                dependency.Flags[1] = (int)Y.GetValue(iSlave);
+                dependency.Flags[2] = (int)Z.GetValue(iSlave);
+
+                Dependencies.Add(dependency);
+            }
         }
 
         public List<Component> Components;
+        public List<Dependency> Dependencies;
     }
 
     public class Node
@@ -123,5 +152,12 @@ namespace Core
         public int[,] Lines;
         public int[,] Trias;
         public int[,] Quads;
+    }
+
+    public class Dependency
+    {
+        public string Slave;
+        public string[] Masters;
+        public int[] Flags;
     }
 }

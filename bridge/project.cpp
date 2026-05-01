@@ -26,6 +26,7 @@ List<Core::Response^>^ convert(std::vector<Response> const& responses);
 std::wstring convert(String^ string);
 std::vector<int> convert(array<int>^ array);
 std::vector<double> convert(array<double>^ array);
+std::vector<std::wstring> convert(array<String^>^ array);
 std::vector<std::vector<int>> convert(array<int, 2>^ array);
 
 Response convert(Core::Response^ response);
@@ -34,10 +35,12 @@ ResponseUnit convert(Core::ResponseUnit^ unit);
 Geometry convert(Core::Geometry^ geometry);
 Component convert(Core::Component^ component);
 Node convert(Core::Node^ component);
+Dependency convert(Core::Dependency^ dependency);
 
 std::vector<Response> convert(List<Core::Response^>^ responses);
 std::vector<Component> convert(List<Core::Component^>^ components);
 std::vector<Node> convert(List<Core::Node^>^ nodes);
+std::vector<Dependency> convert(List<Core::Dependency^>^ dependencies);
 
 class Project::Impl
 {
@@ -248,6 +251,15 @@ std::vector<double> convert(array<double>^ array)
 	return result;
 }
 
+std::vector<std::wstring> convert(array<String^>^ array)
+{
+	int numArray = array->Length;
+	std::vector<std::wstring> result(numArray);
+	for (int i = 0; i != numArray; ++i)
+		result[i] = convert(array[i]);
+	return result;
+}
+
 std::vector<std::vector<int>> convert(array<int, 2>^ array)
 {
 	int numRows = array->GetLength(0);
@@ -318,6 +330,7 @@ Geometry convert(Core::Geometry^ geometry)
 {
 	Geometry result;
 	result.components = convert(geometry->Components);
+	result.dependencies = convert(geometry->Dependencies);
 	return result;
 }
 
@@ -340,6 +353,15 @@ Node convert(Core::Node^ node)
 	result.name = convert(node->Name);
 	result.coordinates = convert(node->Coordinates);
 	result.angles = convert(node->Angles);
+	return result;
+}
+
+Dependency convert(Core::Dependency^ dependency)
+{
+	Dependency result;
+	result.slave = convert(dependency->Slave);
+	result.masters = convert(dependency->Masters);
+	result.flags = convert(dependency->Flags);
 	return result;
 }
 
@@ -375,6 +397,18 @@ std::vector<Node> convert(List<Core::Node^>^ nodes)
 	{
 		Core::Node^ node = nodes->ToArray()[i];
 		result[i] = convert(node);
+	}
+	return result;
+}
+
+std::vector<Dependency> convert(List<Core::Dependency^>^ dependencies)
+{
+	int numDependencies = dependencies->Count;
+	std::vector<Dependency> result(numDependencies);
+	for (int i = 0; i != numDependencies; ++i)
+	{
+		Core::Dependency^ dependency = dependencies->ToArray()[i];
+		result[i] = convert(dependency);
 	}
 	return result;
 }
