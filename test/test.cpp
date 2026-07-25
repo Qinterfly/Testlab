@@ -15,7 +15,9 @@ TEST(ProjectCase, Open)
 TEST(ProjectCase, GetResponses)
 {
 	std::wstring basePath = L"Section1/Record/ResponsesSpectra/";
-	std::vector<std::wstring> paths = { L"Harmonic Spectrum Beam:1:+Z", L"Harmonic Spectrum Beam:2:+Z" };
+	std::vector<std::wstring> paths = { L"Harmonic Spectrum Beam:1:+Z", L"Harmonic Spectrum Beam:2:+Z" }; // Accel
+	//std::vector<std::wstring> paths = { L"Harmonic Spectrum Beam:8:+Z" }; // FRF Accel
+	//std::vector<std::wstring> paths = { L"Harmonic Spectrum Beam:9:+Z" }; // FRF Force
 	for (std::wstring& v : paths)
 		v = basePath + v;
 	sResponses = spProject->getResponses(paths);

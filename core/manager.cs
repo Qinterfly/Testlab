@@ -271,10 +271,14 @@ namespace Core
         // Construct a response using block data
         private Response acquireResponse(in string path, in IBlock2 signal, in AttributeMap props)
         {
+            // Constants
             const int kFRFType = 12;
 
+            // Get the type and units
             ResponseType type = ResponseType.kNone;
             string measuredQuantity = props["Measured quantity"];
+            IQuantity quantityY = props["Y axis unit"];
+            string unitY = mUnitSystem.Label(quantityY);
 
             // Determine the response type
             // 15A version
@@ -288,19 +292,19 @@ namespace Core
             // 12A version
             else
             {
-                IQuantity quantityY = props["Y axis unit"];
-                string unitY = mUnitSystem.Label(quantityY);
-                if (unitY.Equals("g"))
+                if (unitY.Equals("g") || unitY.Equals("g/N"))
                     type = ResponseType.kAccel;
-                if (unitY.Equals("N"))
+                if (unitY.Equals("N") || unitY.Equals("/"))
                     type = ResponseType.kForce;
             }
             if (type == ResponseType.kNone)
                 return null;
 
-            // Checking the reference point in case of FRF                        
+            // Check if the response is FRF
             int iFunctionClass = props["Function class"].AttributeMap["EnumValue"];
             bool isFRF = iFunctionClass == kFRFType;
+            if (unitY.Equals("g/N") || unitY.Equals("/"))
+                isFRF = true;
 
             // Get the keys and values
             double[] keys = (double[])signal.XValues;
