@@ -175,6 +175,7 @@ Core::Response^ convert(Response const& response)
 	result->Keys = convert(response.keys);
 	result->RealValues = convert(response.realValues);
 	result->ImagValues = convert(response.imagValues);
+	result->Labels = convert(response.labels)->ToArray();
 
 	// Header
 	Core::ResponseHeader^ cHeader = result->Header;
@@ -235,6 +236,8 @@ std::wstring convert(String^ string)
 
 std::vector<int> convert(array<int>^ array)
 {
+	if (!array)
+		return {};
 	int numArray = array->Length;
 	std::vector<int> result(numArray);
 	for (int i = 0; i != numArray; ++i)
@@ -244,6 +247,8 @@ std::vector<int> convert(array<int>^ array)
 
 std::vector<double> convert(array<double>^ array)
 {
+	if (!array)
+		return {};
 	int numArray = array->Length;
 	std::vector<double> result(numArray);
 	for (int i = 0; i != numArray; ++i)
@@ -253,6 +258,8 @@ std::vector<double> convert(array<double>^ array)
 
 std::vector<std::wstring> convert(array<String^>^ array)
 {
+	if (!array)
+		return {};
 	int numArray = array->Length;
 	std::vector<std::wstring> result(numArray);
 	for (int i = 0; i != numArray; ++i)
@@ -283,6 +290,7 @@ Response convert(Core::Response^ response)
 	result.keys = convert(response->Keys);
 	result.realValues = convert(response->RealValues);
 	result.imagValues = convert(response->ImagValues);
+	result.labels = convert(response->Labels);
 
 	// Header
 	Core::ResponseHeader^ cHeader = response->Header;

@@ -98,6 +98,7 @@
         public double[] Keys;
         public double[] RealValues;
         public double[] ImagValues;
+        public string[] Labels;
         // Header
         public ResponseHeader Header;
     }
